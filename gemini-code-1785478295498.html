@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MortgagePro - Global Mortgage Calculator & Rate Compare</title>
+    <!-- Favicon: Base64 Encoded SVG (100% Cross-Browser & Local File Safe) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjMGYxNzJhIi8+PHBhdGggZD0iTTIwIDUyIEw1MCAyNSBMODAgNTIgVjc4IEE0IDQgMCAwIDEgNzYgODIgSDI0IEE0IDQgMCAwIDEgMjAgNzggWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik00MiA4MiBWNTggSDU4IFY4MiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZjU5ZTBiIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==">
+    <meta name="description" content="Free online mortgage calculator supporting CPM/PPM loan types, multi-currency formatting, extra payments, and amortization schedule export.">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --primary: #1e40af;
+            --primary-hover: #1e3a8a;
+            --accent: #d97706;
+            --accent-bg: #fef3c7;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 10px;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.5; padding-bottom: 40px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+        /* Header */
+        header { background-color: #0f172a; color: white; padding: 15px 0; border-bottom: 3px solid #f59e0b; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-decoration: none; color: white; }
+        .logo span { color: #f59e0b; }
+        .controls { display: flex; gap: 10px; }
+        select.nav-select { background: #1e293b; color: white; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+
+        /* Ad Slots Placeholder */
+        .ad-banner { background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center; padding: 15px; color: #94a3b8; font-size: 0.8rem; margin: 20px 0; }
+
+        /* Main Grid */
+        .calculator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 10px; }
+        @media(max-width: 850px) { .calculator-grid { grid-template-columns: 1fr; } }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--text-main); border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+
+        /* Form Controls */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+        .input-wrapper { position: relative; }
+        .input-wrapper span.unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none; }
+        .input-wrapper span.prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none; }
+        input[type="number"], select.form-control { width: 100%; padding: 10px 12px; font-size: 0.95rem; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text-main); outline: none; transition: border-color 0.2s; }
+        input.has-prefix { padding-left: 28px; }
+        input.has-unit { padding-right: 32px; }
+        input[type="number"]:focus, select.form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1); }
+
+        .extra-pay-box { background: #fffbe3; border: 1px solid #fde68a; border-radius: 6px; padding: 12px; margin-top: 10px; }
+
+        .btn-calc { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+        .btn-calc:hover { background: var(--primary-hover); }
+
+        /* CTA Lead Box */
+        .cta-box { background: var(--accent-bg); border: 1px solid #fcd34d; border-radius: var(--radius); padding: 20px; margin-bottom: 20px; text-align: left; }
+        .cta-box h3 { font-size: 1rem; color: #78350f; margin-bottom: 6px; }
+        .cta-box p { font-size: 0.85rem; color: #92400e; margin-bottom: 12px; }
+        .btn-lead { display: inline-block; background: var(--accent); color: white; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; transition: opacity 0.2s; }
+        .btn-lead:hover { opacity: 0.9; }
+
+        /* Payment Summary Display */
+        .payment-display { background: #eff6ff; border-radius: 8px; padding: 18px; margin-bottom: 20px; text-align: left; }
+        .payment-display .label { font-size: 0.85rem; color: #1e40af; font-weight: 600; text-transform: uppercase; }
+        .payment-display .value { font-size: 2rem; font-weight: 800; color: #1e3a8a; margin: 4px 0; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 6px; }
+        .stat-card .s-label { font-size: 0.75rem; color: var(--text-muted); }
+        .stat-card .s-value { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-top: 2px; }
+
+        .chart-container { position: relative; height: 220px; width: 100%; }
+
+        /* Amortization Table */
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 15px; }
+        .btn-export, .btn-print { background: #fff; border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-weight: 600; color: var(--text-muted); }
+        .btn-export:hover, .btn-print:hover { background: #f1f5f9; color: var(--text-main); }
+
+        .table-wrapper { max-height: 400px; overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: var(--radius); }
+        table { width: 100%; border-collapse: collapse; text-align: right; font-size: 0.85rem; }
+        th { background: #f8fafc; padding: 10px 14px; position: sticky; top: 0; border-bottom: 1fr solid var(--border); color: var(--text-muted); font-weight: 600; }
+        td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        td:first-child, th:first-child { text-align: center; }
+
+        /* Footer & Modals */
+        footer { margin-top: 50px; border-top: 1px solid var(--border); padding: 20px 0; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+        .footer-links { margin-bottom: 10px; }
+        .footer-links a { color: var(--text-muted); text-decoration: underline; margin: 0 8px; cursor: pointer; }
+
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index: 1000; }
+        .modal { background: white; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 25px; border-radius: var(--radius); box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; text-align: left; }
+        .modal h2 { font-size: 1.2rem; margin-bottom: 12px; }
+        .modal p { font-size: 0.85rem; color: #475569; margin-bottom: 10px; line-height: 1.6; }
+        .modal-close { position: absolute; right: 15px; top: 15px; border: none; background: none; font-size: 1.2rem; cursor: pointer; }
+
+        @media print {
+            header, .cta-box, .ad-banner, .btn-calc, .controls, footer, .btn-export, .btn-print { display: none !important; }
+            .calculator-grid { display: block; }
+            .card { border: none; box-shadow: none; padding: 0; margin-bottom: 20px; }
+            .table-wrapper { max-height: none; overflow: visible; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="container header-content">
+            <a href="#" class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span id="logoText">Mortgage</span>Pro
+            </a>
+            <div class="controls">
+                <select id="langSelect" class="nav-select" onchange="changeLanguage()">
+                    <option value="en">English</option>
+                    <option value="zh">中文</option>
+                </select>
+                <select id="currSelect" class="nav-select" onchange="calculateLoan()">
+                    <option value="$">USD ($)</option>
+                    <option value="€">EUR (€)</option>
+                    <option value="£">GBP (£)</option>
+                    <option value="¥">CNY/JPY (¥)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- Top Ad Slot -->
+        <div class="ad-banner">[Ad Placement - Google AdSense 728x90 Header Banner]</div>
+
+        <div class="calculator-grid">
+            
+            <!-- Input Form -->
+            <div class="card">
+                <div class="card-title" id="t-loanParams">Loan Parameters</div>
+                
+                <div class="form-group">
+                    <label id="t-loanType">Repayment Type</label>
+                    <select id="repayType" class="form-control" onchange="calculateLoan()">
+                        <option value="CPM" id="opt-cpm">Equal Payment (CPM / Principal & Interest)</option>
+                        <option value="PPM" id="opt-ppm">Equal Principal (PPM)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label id="t-homePrice">Home Price</label>
+                    <div class="input-wrapper">
+                        <span class="prefix curr-symbol">$</span>
+                        <input type="number" id="homePrice" class="has-prefix" value="400000" step="10000" oninput="updateDownPayment()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="t-downPayment">Down Payment</label>
+                    <div class="input-wrapper">
+                        <span class="prefix curr-symbol">$</span>
+                        <input type="number" id="downPayment" class="has-prefix" value="80000" step="5000">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="t-interestRate">Interest Rate</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="interestRate" class="has-unit" value="6.5" step="0.1">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="t-loanTerm">Loan Term</label>
+                    <select id="loanTerm" class="form-control">
+                        <option value="30">30 Years</option>
+                        <option value="20">20 Years</option>
+                        <option value="15">15 Years</option>
+                        <option value="10">10 Years</option>
+                    </select>
+                </div>
+
+                <div class="extra-pay-box">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label id="t-extraPay" style="color:#b45309;">Extra Monthly Payment</label>
+                        <div class="input-wrapper">
+                            <span class="prefix curr-symbol">$</span>
+                            <input type="number" id="extraPayment" class="has-prefix" value="0" step="50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:15px;">
+                    <label id="t-taxIns">Property Tax & Insurance / Year</label>
+                    <div class="input-wrapper">
+                        <span class="prefix curr-symbol">$</span>
+                        <input type="number" id="taxInsurance" class="has-prefix" value="6000" step="500">
+                    </div>
+                </div>
+
+                <button class="btn-calc" id="btn-calculate" onclick="calculateLoan()">Calculate</button>
+            </div>
+
+            <!-- Output & Chart -->
+            <div>
+                <!-- Affiliate Lead Box -->
+                <div class="cta-box">
+                    <h3 id="t-ctaTitle">Need a lower mortgage rate?</h3>
+                    <p id="t-ctaDesc">Compare top lenders in your area and save up to $12,000 in total interest.</p>
+                    <!-- Affiliate Link Placeholder: Replace href with your CJ Affiliate or Financial Network Tracking Link -->
+                    <a href="https://example.com/affiliate-link" target="_blank" rel="noopener sponsored" class="btn-lead" id="ctaBtn">Get Free Rate Quotes &rarr;</a>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" id="t-paymentSummary">Payment Summary</div>
+                    
+                    <div class="payment-display">
+                        <div class="label" id="t-estMonthly">Est. Monthly Payment</div>
+                        <div class="value" id="resMonthly">$0.00</div>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="s-label" id="t-pni">Principal & Interest (P&I)</div>
+                            <div class="s-value" id="resPNI">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="s-label" id="t-ti">Tax & Insurance / Mo</div>
+                            <div class="s-value" id="resTI">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="s-label" id="t-totalInterest">Total Interest Paid</div>
+                            <div class="s-value" id="resTotalInterest">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="s-label" id="t-actualTerm">Actual Payoff Time</div>
+                            <div class="s-value" id="resActualTerm">30.0 Yrs</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- In-Feed Ad Slot -->
+        <div class="ad-banner">[Ad Placement - Search Results Bottom Banner]</div>
+
+        <!-- Amortization Schedule Table -->
+        <div class="table-header">
+            <div class="card-title" style="border:none; margin:0;" id="t-scheduleTitle">Amortization Schedule</div>
+            <div>
+                <button class="btn-print" onclick="window.print()" id="btn-print">Print Report</button>
+                <button class="btn-export" onclick="exportCSV()" id="btn-export">Export CSV</button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th id="th-month">Month</th>
+                        <th id="th-payment">Payment</th>
+                        <th id="th-principal">Principal</th>
+                        <th id="th-interest">Interest</th>
+                        <th id="th-balance">Remaining Balance</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody">
+                    <!-- Dynamic Generation -->
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a onclick="openModal('privacy')">Privacy Policy</a> | 
+                <a onclick="openModal('terms')">Terms of Service</a> | 
+                <a onclick="openModal('affiliate')">Affiliate Disclosure</a>
+            </div>
+            <p>&copy; 2026 MortgagePro. All rights reserved. For estimation purposes only.</p>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Language Dictionary
+        const i18n = {
+            en: {
+                logoText: "Mortgage",
+                loanParams: "Loan Parameters",
+                repayType: "Repayment Type",
+                optCPM: "Equal Payment (CPM / Principal & Interest)",
+                optPPM: "Equal Principal (PPM)",
+                homePrice: "Home Price",
+                downPayment: "Down Payment",
+                interestRate: "Interest Rate",
+                loanTerm: "Loan Term",
+                extraPay: "Extra Monthly Payment",
+                taxIns: "Property Tax & Insurance / Year",
+                btnCalculate: "Calculate",
+                ctaTitle: "Need a lower mortgage rate?",
+                ctaDesc: "Compare top lenders in your area and save up to $12,000 in total interest.",
+                ctaBtn: "Get Free Rate Quotes →",
+                paymentSummary: "Payment Summary",
+                estMonthly: "Est. Monthly Payment",
+                pni: "Principal & Interest (P&I)",
+                ti: "Tax & Insurance / Mo",
+                totalInterest: "Total Interest Paid",
+                actualTerm: "Actual Payoff Time",
+                scheduleTitle: "Amortization Schedule",
+                btnPrint: "Print Report",
+                btnExport: "Export CSV",
+                thMonth: "Month",
+                thPayment: "Payment",
+                thPrincipal: "Principal",
+                thInterest: "Interest",
+                thBalance: "Remaining Balance",
+                yrs: "Yrs",
+                privacyTitle: "Privacy Policy",
+                privacyBody: "We respect your privacy. This tool calculates mortgage data locally inside your web browser. No financial parameters or personal data entered into this calculator are collected or stored on our servers.",
+                termsTitle: "Terms of Service",
+                termsBody: "This mortgage calculator is provided for informational and educational purposes only. Calculated estimates do not constitute a financial offer or guarantee of credit. Actual loan terms depend on lender criteria.",
+                affiliateTitle: "Affiliate Disclosure",
+                affiliateBody: "Some of the links on this website are affiliate links. If you click through to request a rate quote or apply for a loan, we may receive compensation from the lender at no extra cost to you."
+            },
+            zh: {
+                logoText: "抵押贷款",
+                loanParams: "贷款参数",
+                repayType: "还款类型",
+                optCPM: "等额本息（CPM）",
+                optPPM: "等额本金（PPM）",
+                homePrice: "房价",
+                downPayment: "首付",
+                interestRate: "利率",
+                loanTerm: "贷款期限",
+                extraPay: "额外月供",
+                taxIns: "房产税及保险/年",
+                btnCalculate: "计算",
+                ctaTitle: "需要更低的抵押贷款利率吗？",
+                ctaDesc: "比较您所在地区最好的贷款机构，最多可节省 12,000 美元的总利息。",
+                ctaBtn: "获取免费报价 →",
+                paymentSummary: "付款汇总",
+                estMonthly: "预计每月付款",
+                pni: "本金及利息 (P&I)",
+                ti: "税费与保险 / Mo",
+                totalInterest: "已付利息总额",
+                actualTerm: "实际收益时间",
+                scheduleTitle: "摊销计划",
+                btnPrint: "打印报告",
+                btnExport: "导出 CSV 文件",
+                thMonth: "期数",
+                thPayment: "单期还款",
+                thPrincipal: "偿还本金",
+                thInterest: "偿还利息",
+                thBalance: "剩余本金",
+                yrs: "年",
+                privacyTitle: "隐私政策",
+                privacyBody: "我们尊重您的隐私。本工具在您的浏览器本地计算所有抵押贷款数据。您输入的任何财务参数均不会被收集或存储到我们的服务器上。",
+                termsTitle: "服务条款",
+                termsBody: "本抵押贷款计算器仅供信息参考和教育用途。计算得出的估计值不构成金融要约或信用保证。实际贷款条件取决于贷款机构的审核。",
+                affiliateTitle: "联盟营销声明",
+                affiliateBody: "本网站上的部分链接为联盟营销链接。如果您通过链接申请报价或贷款，我们可能会从贷款机构获得佣金，这不会增加您的任何额外费用。"
+            }
+        };
+
+        let currentLang = 'en';
+        let myChart = null;
+        let scheduleData = [];
+
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            const dict = i18n[currentLang];
+
+            document.getElementById('logoText').innerText = dict.logoText;
+            document.getElementById('t-loanParams').innerText = dict.loanParams;
+            document.getElementById('t-loanType').innerText = dict.repayType;
+            document.getElementById('opt-cpm').innerText = dict.optCPM;
+            document.getElementById('opt-ppm').innerText = dict.optPPM;
+            document.getElementById('t-homePrice').innerText = dict.homePrice;
+            document.getElementById('t-downPayment').innerText = dict.downPayment;
+            document.getElementById('t-interestRate').innerText = dict.interestRate;
+            document.getElementById('t-loanTerm').innerText = dict.loanTerm;
+            document.getElementById('t-extraPay').innerText = dict.extraPay;
+            document.getElementById('t-taxIns').innerText = dict.taxIns;
+            document.getElementById('btn-calculate').innerText = dict.btnCalculate;
+            
+            document.getElementById('t-ctaTitle').innerText = dict.ctaTitle;
+            document.getElementById('t-ctaDesc').innerText = dict.ctaDesc;
+            document.getElementById('ctaBtn').innerText = dict.ctaBtn;
+
+            document.getElementById('t-paymentSummary').innerText = dict.paymentSummary;
+            document.getElementById('t-estMonthly').innerText = dict.estMonthly;
+            document.getElementById('t-pni').innerText = dict.pni;
+            document.getElementById('t-ti').innerText = dict.ti;
+            document.getElementById('t-totalInterest').innerText = dict.totalInterest;
+            document.getElementById('t-actualTerm').innerText = dict.actualTerm;
+
+            document.getElementById('t-scheduleTitle').innerText = dict.scheduleTitle;
+            document.getElementById('btn-print').innerText = dict.btnPrint;
+            document.getElementById('btn-export').innerText = dict.btnExport;
+
+            document.getElementById('th-month').innerText = dict.thMonth;
+            document.getElementById('th-payment').innerText = dict.thPayment;
+            document.getElementById('th-principal').innerText = dict.thPrincipal;
+            document.getElementById('th-interest').innerText = dict.thInterest;
+            document.getElementById('th-balance').innerText = dict.thBalance;
+
+            calculateLoan();
+        }
+
+        function updateDownPayment() {
+            const price = parseFloat(document.getElementById('homePrice').value) || 0;
+            document.getElementById('downPayment').value = Math.round(price * 0.2);
+            calculateLoan();
+        }
+
+        function formatCurrency(val) {
+            const symbol = document.getElementById('currSelect').value;
+            return symbol + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function calculateLoan() {
+            const currSymbol = document.getElementById('currSelect').value;
+            document.querySelectorAll('.curr-symbol').forEach(el => el.innerText = currSymbol);
+
+            const type = document.getElementById('repayType').value;
+            const price = parseFloat(document.getElementById('homePrice').value) || 0;
+            const down = parseFloat(document.getElementById('downPayment').value) || 0;
+            const principal = Math.max(0, price - down);
+            const rate = (parseFloat(document.getElementById('interestRate').value) || 0) / 100 / 12;
+            const months = (parseInt(document.getElementById('loanTerm').value) || 30) * 12;
+            const extra = parseFloat(document.getElementById('extraPayment').value) || 0;
+            const taxInsYear = parseFloat(document.getElementById('taxInsurance').value) || 0;
+            const taxInsMonth = taxInsYear / 12;
+
+            scheduleData = [];
+            let balance = principal;
+            let totalInterestPaid = 0;
+            let monthCount = 0;
+            let firstMonthPAndI = 0;
+
+            if (type === 'CPM') {
+                // CPM - Equal Installments
+                let monthlyPAndI = 0;
+                if (rate > 0) {
+                    monthlyPAndI = (principal * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
+                } else {
+                    monthlyPAndI = principal / months;
+                }
+                firstMonthPAndI = monthlyPAndI;
+
+                while (balance > 0.01 && monthCount < months) {
+                    monthCount++;
+                    let interest = balance * rate;
+                    let principalPaid = (monthlyPAndI - interest) + extra;
+                    if (principalPaid > balance) {
+                        principalPaid = balance;
+                    }
+                    balance -= principalPaid;
+                    totalInterestPaid += interest;
+
+                    scheduleData.push({
+                        month: monthCount,
+                        payment: principalPaid + interest,
+                        principal: principalPaid,
+                        interest: interest,
+                        balance: Math.max(0, balance)
+                    });
+                }
+            } else {
+                // PPM - Equal Principal
+                const basePrincipalPaid = principal / months;
+                while (balance > 0.01 && monthCount < months) {
+                    monthCount++;
+                    let interest = balance * rate;
+                    let principalPaid = basePrincipalPaid + extra;
+                    if (principalPaid > balance) {
+                        principalPaid = balance;
+                    }
+                    if (monthCount === 1) {
+                        firstMonthPAndI = principalPaid + interest - extra;
+                    }
+                    balance -= principalPaid;
+                    totalInterestPaid += interest;
+
+                    scheduleData.push({
+                        month: monthCount,
+                        payment: principalPaid + interest,
+                        principal: principalPaid,
+                        interest: interest,
+                        balance: Math.max(0, balance)
+                    });
+                }
+            }
+
+            // Update UI Stats
+            const totalEstMonthly = firstMonthPAndI + taxInsMonth + extra;
+            document.getElementById('resMonthly').innerText = formatCurrency(totalEstMonthly);
+            document.getElementById('resPNI').innerText = formatCurrency(firstMonthPAndI);
+            document.getElementById('resTI').innerText = formatCurrency(taxInsMonth);
+            document.getElementById('resTotalInterest').innerText = formatCurrency(totalInterestPaid);
+            document.getElementById('resActualTerm').innerText = (monthCount / 12).toFixed(1) + " " + i18n[currentLang].yrs;
+
+            // Render Schedule Table
+            renderTable();
+
+            // Render Pie Chart
+            renderChart(firstMonthPAndI, taxInsMonth, extra);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('scheduleBody');
+            tbody.innerHTML = '';
+            
+            scheduleData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.month}</td>
+                    <td>${formatCurrency(row.payment)}</td>
+                    <td>${formatCurrency(row.principal)}</td>
+                    <td>${formatCurrency(row.interest)}</td>
+                    <td>${formatCurrency(row.balance)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderChart(pni, ti, extra) {
+            const ctx = document.getElementById('paymentChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['P&I Payment', 'Tax & Insurance', 'Extra Payment'],
+                    datasets: [{
+                        data: [pni, ti, extra],
+                        backgroundColor: ['#0f172a', '#3b82f6', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function exportCSV() {
+            if (!scheduleData.length) return;
+            let csv = 'Month,Payment,Principal,Interest,Remaining Balance\n';
+            scheduleData.forEach(r => {
+                csv += `${r.month},${r.payment.toFixed(2)},${r.principal.toFixed(2)},${r.interest.toFixed(2)},${r.balance.toFixed(2)}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Mortgage_Amortization_Schedule.csv');
+            a.click();
+        }
+
+        // Modal Handler
+        function openModal(type) {
+            const dict = i18n[currentLang];
+            const content = document.getElementById('modalContent');
+            if (type === 'privacy') {
+                content.innerHTML = `<h2>${dict.privacyTitle}</h2><p>${dict.privacyBody}</p>`;
+            } else if (type === 'terms') {
+                content.innerHTML = `<h2>${dict.termsTitle}</h2><p>${dict.termsBody}</p>`;
+            } else if (type === 'affiliate') {
+                content.innerHTML = `<h2>${dict.affiliateTitle}</h2><p>${dict.affiliateBody}</p>`;
+            }
+            document.getElementById('modalOverlay').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+        }
+
+        // Initial Exec
+        calculateLoan();
+    </script>
+</body>
+</html>
